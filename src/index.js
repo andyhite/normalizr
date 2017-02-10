@@ -53,17 +53,17 @@ export const normalize = (input, schema) => {
   return { entities, result };
 };
 
-const unvisit = (input, schema, getDenormalizedEntity) => {
+const unvisit = (input, schema, getDenormalizedEntity, cache) => {
   if (typeof schema === 'object' && (!schema.denormalize || typeof schema.denormalize !== 'function')) {
     const method = Array.isArray(schema) ? ArrayUtils.denormalize : ObjectUtils.denormalize;
-    return method(schema, input, unvisit, getDenormalizedEntity);
+    return method(schema, input, unvisit, getDenormalizedEntity, cache);
   }
 
   if (input === undefined || input === null) {
     return input;
   }
 
-  return schema.denormalize(input, unvisit, getDenormalizedEntity);
+  return schema.denormalize(input, unvisit, getDenormalizedEntity, cache);
 };
 
 const getEntity = (entityOrId, schemaKey, entities, isImmutable) => {
@@ -82,12 +82,12 @@ const getEntities = (entities, isImmutable) => (schema, entityOrId) => {
   return getEntity(entityOrId, schemaKey, entities, isImmutable);
 };
 
-export const denormalize = (input, schema, entities) => {
+export const denormalize = (input, schema, entities, cache = {}) => {
   if (!input) {
     return input;
   }
 
   const isImmutable = ImmutableUtils.isImmutable(entities);
   const getDenormalizedEntity = getEntities(entities, isImmutable);
-  return unvisit(input, schema, getDenormalizedEntity);
+  return unvisit(input, schema, getDenormalizedEntity, cache);
 };

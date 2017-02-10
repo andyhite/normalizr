@@ -207,4 +207,35 @@ describe('denormalize', () => {
     });
     expect(() => denormalize('123', article, entities)).not.toThrow();
   });
+
+  it('denormalizes recursive dependencies', () => {
+    const user = new schema.Entity('users');
+    const report = new schema.Entity('reports');
+
+    user.define({
+      reports: [ report ]
+    });
+    report.define({
+      user: user
+    });
+
+    const entities = {
+      reports: {
+        1: {
+          id: 1,
+          title: 'Weekly report',
+          user: 1
+        }
+      },
+      users: {
+        1: {
+          id: 1,
+          role: 'manager',
+          reports: [ 1 ]
+        }
+      }
+    };
+    console.log(denormalize('1', report, entities));
+    expect(denormalize('1', report, entities)).toMatchSnapshot();
+  });
 });
