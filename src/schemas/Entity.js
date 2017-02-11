@@ -1,8 +1,7 @@
 import * as ImmutableUtils from './ImmutableUtils';
 
-const getDefaultGetId = (idAttribute) => (input) => {
-  return ImmutableUtils.isImmutable(input) ? input.get(idAttribute) : input[idAttribute];
-}
+const getDefaultGetId = (idAttribute) => (input) =>
+  ImmutableUtils.isImmutable(input) ? input.get(idAttribute) : input[idAttribute];
 
 export default class EntitySchema {
   constructor(key, definition = {}, options = {}) {
@@ -62,25 +61,36 @@ export default class EntitySchema {
     return this.getId(input, parent, key);
   }
 
-  denormalize(entityOrId, unvisit, getDenormalizedEntity, writeCache, readCache) {
+  denormalize(entityOrId, unvisit, getDenormalizedEntity, cache) {
     const entity = getDenormalizedEntity(this, entityOrId);
     if (typeof entity !== 'object' || entity === null) {
       return entity;
     }
 
-    if (readCache(this, entity)) {
-      return readCache(this, entity);
+    const schemaKey = this.key;
+    const entityId = this.getId(entity);
+
+    if (!cache[schemaKey]) {
+      cache[schemaKey] = {};
+    }
+
+    const cachedEntity = cache[schemaKey][entityId];
+
+    if (cachedEntity) {
+      return cachedEntity;
     } else {
       if (ImmutableUtils.isImmutable(entity)) {
         return ImmutableUtils.denormalizeImmutable(
-          this.schema, entity, unvisit, getDenormalizedEntity, writeCache, readCache);
+          this.schema, entity, unvisit, getDenormalizedEntity, cache);
       }
 
-      const processedEntity = writeCache(this, entity);
+      cache[schemaKey][entityId] = entity;
+
+      const processedEntity = cache[schemaKey][entityId];
       Object.keys(this.schema).forEach((key) => {
         if (processedEntity.hasOwnProperty(key)) {
           const schema = this.schema[key];
-          processedEntity[key] = unvisit(processedEntity[key], schema, getDenormalizedEntity, writeCache, readCache);
+          processedEntity[key] = unvisit(processedEntity[key], schema, getDenormalizedEntity, cache);
         }
       });
 

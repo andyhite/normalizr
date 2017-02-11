@@ -26,14 +26,14 @@ export function isImmutable(object) {
  * @param  {function} getDenormalizedEntity
  * @return {Immutable.Map|Immutable.Record}
  */
-export function denormalizeImmutable(schema, input, unvisit, getDenormalizedEntity, writeCache, readCache) {
+export function denormalizeImmutable(schema, input, unvisit, getDenormalizedEntity, cache) {
   return Object.keys(schema).reduce((object, key) => {
     // Immutable maps cast keys to strings on write so we need to ensure
     // we're accessing them using string keys.
     const stringKey = `${key}`;
 
     if (object.has(stringKey)) {
-      return object.set(stringKey, unvisit(object.get(stringKey), schema[stringKey], getDenormalizedEntity, writeCache, readCache));
+      return object.set(stringKey, unvisit(object.get(stringKey), schema[stringKey], getDenormalizedEntity, cache));
     } else {
       return object;
     }

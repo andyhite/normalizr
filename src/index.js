@@ -53,17 +53,17 @@ export const normalize = (input, schema) => {
   return { entities, result };
 };
 
-const unvisit = (input, schema, getDenormalizedEntity, writeCache, readCache) => {
+const unvisit = (input, schema, getDenormalizedEntity, cache) => {
   if (typeof schema === 'object' && (!schema.denormalize || typeof schema.denormalize !== 'function')) {
     const method = Array.isArray(schema) ? ArrayUtils.denormalize : ObjectUtils.denormalize;
-    return method(schema, input, unvisit, getDenormalizedEntity, writeCache, readCache);
+    return method(schema, input, unvisit, getDenormalizedEntity, cache);
   }
 
   if (input === undefined || input === null) {
     return input;
   }
 
-  return schema.denormalize(input, unvisit, getDenormalizedEntity, writeCache, readCache);
+  return schema.denormalize(input, unvisit, getDenormalizedEntity, cache);
 };
 
 const getEntity = (entityOrId, schemaKey, entities, isImmutable) => {
@@ -93,27 +93,7 @@ export const denormalize = (input, schema, entities, cache = {}) => {
     return input;
   }
 
-  const writeCache = (currentSchema, entity) => {
-    if (!cache[currentSchema.key]) {
-      cache[currentSchema.key] = {};
-    }
-
-    if (!cache[currentSchema.key][currentSchema.getId(entity)]) {
-      cache[currentSchema.key][currentSchema.getId(entity)] = entity;
-    }
-
-    return cache[currentSchema.key][currentSchema.getId(entity)];
-  };
-
-  const readCache = (currentSchema, entity) => {
-    if (!cache[currentSchema.key]) {
-      cache[currentSchema.key] = {};
-    }
-
-    return cache[currentSchema.key][currentSchema.getId(entity)] || null;
-  };
-
   const isImmutable = ImmutableUtils.isImmutable(entities);
   const getDenormalizedEntity = getEntities(entities, isImmutable);
-  return unvisit(input, schema, getDenormalizedEntity, writeCache, readCache);
+  return unvisit(input, schema, getDenormalizedEntity, cache);
 };
