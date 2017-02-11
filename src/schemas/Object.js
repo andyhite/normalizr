@@ -14,15 +14,15 @@ export const normalize = (schema, input, parent, key, visit, addEntity) => {
   return object;
 };
 
-export const denormalize = (schema, input, unvisit, getDenormalizedEntity, cache) => {
+export const denormalize = (schema, input, unvisit, getDenormalizedEntity, writeCache, readCache) => {
   if (ImmutableUtils.isImmutable(input)) {
-    return ImmutableUtils.denormalizeImmutable(schema, input, unvisit, getDenormalizedEntity, cache);
+    return ImmutableUtils.denormalizeImmutable(schema, input, unvisit, getDenormalizedEntity, writeCache, readCache);
   }
 
   const object = { ...input };
   Object.keys(schema).forEach((key) => {
     if (object[key]) {
-      object[key] = unvisit(object[key], schema[key], getDenormalizedEntity, cache);
+      object[key] = unvisit(object[key], schema[key], getDenormalizedEntity, writeCache, readCache);
     }
   });
   return object;

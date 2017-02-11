@@ -1,7 +1,8 @@
 import * as ImmutableUtils from './ImmutableUtils';
 
-const getDefaultGetId = (idAttribute) => (input) =>
-  ImmutableUtils.isImmutable(input) ? input.get(idAttribute) : input[idAttribute];
+const getDefaultGetId = (idAttribute) => (input) => {
+  return ImmutableUtils.isImmutable(input) ? input.get(idAttribute) : input[idAttribute];
+}
 
 export default class EntitySchema {
   constructor(key, definition = {}, options = {}) {
@@ -61,34 +62,29 @@ export default class EntitySchema {
     return this.getId(input, parent, key);
   }
 
-  denormalize(entityOrId, unvisit, getDenormalizedEntity, cache) {
+  denormalize(entityOrId, unvisit, getDenormalizedEntity, writeCache, readCache) {
     const entity = getDenormalizedEntity(this, entityOrId);
     if (typeof entity !== 'object' || entity === null) {
       return entity;
     }
 
-    if (!cache[this._key]) {
-      cache[this._key] = {};
-    }
-
-    if (cache[this._key][this.getId(entity)]) {
-      return cache[this._key][this.getId(entity)];
+    if (readCache(this, entity)) {
+      return readCache(this, entity);
     } else {
       if (ImmutableUtils.isImmutable(entity)) {
-        return ImmutableUtils.denormalizeImmutable(this.schema, entity, unvisit, getDenormalizedEntity, cache);
+        return ImmutableUtils.denormalizeImmutable(
+          this.schema, entity, unvisit, getDenormalizedEntity, writeCache, readCache);
       }
 
-      const processedEntity = { ...entity };
+      const processedEntity = writeCache(this, entity);
       Object.keys(this.schema).forEach((key) => {
         if (processedEntity.hasOwnProperty(key)) {
           const schema = this.schema[key];
-          processedEntity[key] = unvisit(processedEntity[key], schema, getDenormalizedEntity, cache);
+          processedEntity[key] = unvisit(processedEntity[key], schema, getDenormalizedEntity, writeCache, readCache);
         }
       });
 
-      cache[this._key][processedEntity[this.getId(entity)]] = processedEntity;
-
-      return cache[this._key][processedEntity[this.getId(entity)]];
+      return processedEntity;
     }
   }
 }
